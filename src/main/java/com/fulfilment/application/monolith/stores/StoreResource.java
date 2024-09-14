@@ -2,6 +2,7 @@ package com.fulfilment.application.monolith.stores;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,7 +16,10 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import java.util.List;
@@ -47,35 +51,37 @@ public class StoreResource {
   }
 
   @POST
-  @Transactional
-  public Response create(Store store) {
+  public Response create(Store store, @Context UriInfo uriInfo) {
     if (store.id != null) {
       throw new WebApplicationException("Id was invalidly set on request.", 422);
     }
-
-    store.persist();
-
+    QuarkusTransaction.requiringNew().run(() -> {
+      store.persistAndFlush();  // persist and flush already commit. I shrink the transaction scope
+    });
     legacyStoreManagerGateway.createStoreOnLegacySystem(store);
 
-    return Response.ok(store).status(201).build();
+    UriBuilder builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(store.id));
+    return Response.created(builder.build()).build();
   }
 
   @PUT
   @Path("{id}")
-  @Transactional
   public Store update(Long id, Store updatedStore) {
     if (updatedStore.name == null) {
       throw new WebApplicationException("Store Name was not set on request.", 422);
     }
+    Store entity = QuarkusTransaction.requiringNew().call (() -> {
+      Store store = Store.findById(id);
 
-    Store entity = Store.findById(id);
+      if (store == null) {
+        throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      }
 
-    if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
-    }
-
-    entity.name = updatedStore.name;
-    entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+      store.name = updatedStore.name;
+      store.quantityProductsInStock = updatedStore.quantityProductsInStock;
+      store.persistAndFlush();
+      return store;
+    });
 
     legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
 
@@ -86,24 +92,26 @@ public class StoreResource {
   @Path("{id}")
   @Transactional
   public Store patch(Long id, Store updatedStore) {
-    if (updatedStore.name == null) {
-      throw new WebApplicationException("Store Name was not set on request.", 422);
-    }
+    // Check with Ikea.... I think this is an error because PATCH can partially change an object
+//    if (updatedStore.name == null) {
+//      throw new WebApplicationException("Store Name was not set on request.", 422);
+//    }
+    Store entity = QuarkusTransaction.requiringNew().call (() -> {
+      Store store = Store.findById(id);
 
-    Store entity = Store.findById(id);
+      if (store == null) {
+        throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      }
 
-    if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
-    }
+      if (updatedStore.name != null) { //PATCH can partially change an object
+        store.name = updatedStore.name;
+      }
 
-    if (entity.name != null) {
-      entity.name = updatedStore.name;
-    }
-
-    if (entity.quantityProductsInStock != 0) {
-      entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
-    }
-
+      if (updatedStore.quantityProductsInStock != 0) { //PATCH can partially change an object
+        store.quantityProductsInStock = updatedStore.quantityProductsInStock;
+      }
+      return store;
+    });
     legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
 
     return entity;
