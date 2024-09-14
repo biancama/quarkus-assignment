@@ -34,7 +34,11 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'findById'");
+    var warehouse = find("businessUnitCode", buCode).firstResult();
+    if (warehouse == null) {
+      return null;
+    } else {
+      return warehouse.toWarehouse();
+    }
   }
 }

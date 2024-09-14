@@ -26,8 +26,12 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public Warehouse getAWarehouseUnitByID(String id) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getAWarehouseUnitByID'");
+    var warehouseDb = warehouseRepository.findByBusinessUnitCode(id);
+    if (warehouseDb == null) {
+      return null;
+    } else {
+      return toWarehouseResponse(warehouseDb);
+    }
   }
 
   @Override
