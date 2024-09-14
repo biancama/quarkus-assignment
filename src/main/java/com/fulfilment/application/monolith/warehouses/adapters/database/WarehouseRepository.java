@@ -33,8 +33,9 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void update(Warehouse warehouse) {
-    warehouse.createdAt = null;
-    persist(WarehouseMapper.INSTANCE.warehouseDtoToDbWarehouse(warehouse));
+    var warehouseDb = list("businessUnitCode = ?1 AND archivedAt IS NULL", warehouse.businessUnitCode).stream().findFirst().orElse(null);
+    warehouseDb.archivedAt = LocalDateTime.now();
+    persist(warehouseDb);
   }
 
   @Override

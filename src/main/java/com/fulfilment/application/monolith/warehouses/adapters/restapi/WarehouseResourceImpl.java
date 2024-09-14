@@ -2,6 +2,7 @@ package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ArchiveWarehouseUseCase;
 import com.fulfilment.application.monolith.warehouses.mapper.WarehouseMapper;
 import com.warehouse.api.WarehouseResource;
 import com.warehouse.api.beans.Warehouse;
@@ -21,6 +22,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Inject private WarehouseRepository warehouseRepository;
   @Inject private CreateWarehouseOperation createWarehouseOperation;
+  @Inject private ArchiveWarehouseUseCase archiveWarehouseUseCase;
   @Context
   private UriInfo uriInfo;
 
@@ -52,8 +54,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public void archiveAWarehouseUnitByID(String id) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'archiveAWarehouseUnitByID'");
+    archiveWarehouseUseCase.archive(warehouseRepository.findByBusinessUnitCode(id));
   }
 
   @Override
