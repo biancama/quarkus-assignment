@@ -12,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +34,7 @@ public class CreateWarehouseUseCaseTest {
 
         List<Warehouse> warehousesPerLocation = getWarehouses();
 
-        var location = new Location("AMS", 3, 400);
+        var location = new Location("AMS", 3, 1000);
 
         when(locationResolver.resolveByIdentifier(warehouse.location)).thenReturn(location);
         when(warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode)).thenReturn(null);
@@ -49,8 +48,6 @@ public class CreateWarehouseUseCaseTest {
     @Test
     public void givenWarehouse_whenBusinessUnitAlreadyExist_thenReturnAValidationError() {
         var warehouse = getWarehouse();
-
-        List<Warehouse> warehousesPerLocation = getWarehouses();
 
         var location = new Location("AMS", 3, 400);
 
@@ -81,7 +78,8 @@ public class CreateWarehouseUseCaseTest {
     @Test
     public void givenWarehouse_whenMaxCapacityOfWarehousesPerLocationIsAlreadyReached_thenReturnAValidationError() {
         var warehouse = getWarehouse();
-
+        warehouse.capacity = 0;
+        warehouse.stock = 0;
         List<Warehouse> warehousesPerLocation = getWarehouses();
 
         var location = new Location("AMS", 3, 200);
@@ -93,6 +91,33 @@ public class CreateWarehouseUseCaseTest {
         var warehouseCreated = createWarehouseUseCase.create(warehouse);
         assertTrue(warehouseCreated.isLeft(), "Validation exception");
         assertThat(warehouseCreated.getLeft(), equalTo(("Location AMS has reached max capacity")));
+    }
+
+    @Test
+    public void givenWarehouse_whenMaxCapacityOfWarehousesPerLocationIsNotReachedButItWillBeReachedWithTheNewWarehosue_thenReturnAValidationError() {
+        var warehouse = getWarehouse();
+
+        List<Warehouse> warehousesPerLocation = getWarehouses();
+
+        var location = new Location("AMS", 3, 350);
+
+        when(locationResolver.resolveByIdentifier(warehouse.location)).thenReturn(location);
+        when(warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode)).thenReturn(null);
+        when(warehouseStore.getAllByLocation(warehouse.location)).thenReturn(warehousesPerLocation);
+
+        var warehouseCreated = createWarehouseUseCase.create(warehouse);
+        assertTrue(warehouseCreated.isLeft(), "Validation exception");
+        assertThat(warehouseCreated.getLeft(), equalTo(("Location AMS has reached max capacity")));
+    }
+
+
+    @Test
+    public void givenWarehouse_whenStockIsGreaterThanCapacity_thenReturnAValidationError() {
+        var warehouse = getWarehouse();
+        warehouse.stock = warehouse.capacity + 1;
+        var warehouseCreated = createWarehouseUseCase.create(warehouse);
+        assertTrue(warehouseCreated.isLeft(), "Validation exception");
+        assertThat(warehouseCreated.getLeft(), equalTo(("Cannot create a warehouse with stock greater than capacity")));
     }
 
     private static List<Warehouse> getWarehouses() {
@@ -108,6 +133,8 @@ public class CreateWarehouseUseCaseTest {
         var warehouse = new Warehouse();
         warehouse.location = "AMS";
         warehouse.businessUnitCode = "BU1";
+        warehouse.capacity = 100;
+        warehouse.stock = 0;
         return warehouse;
     }
 }
