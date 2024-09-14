@@ -38,20 +38,16 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
     if (location.maxCapacity - deltaCapacity < warehousesPerLocationForNewWarehouse.stream().map(w -> w.capacity).reduce(0, Integer::sum)) return Either.left(String.format("Location %s has reached max capacity", location.identification));
 
-    if (!isInTheSameLocation)  {
+    if (!isInTheSameLocation && location.maxNumberOfWarehouses <= warehousesPerLocationForNewWarehouse.size()) {
       //if it is in the same location, then I don't need to check if the system will overrun the max number of warehouses, because I add one and delete one
-      if (location.maxNumberOfWarehouses  <= warehousesPerLocationForNewWarehouse.size()) return Either.left(String.format("Location %s has reached max number of warehouses", location.identification));
-      // extra check //TODO Capacity Accommodation Ask to Ikea maybe  I did NOT understand
-      var warehousesPerLocationForOldWarehouse = warehouseStore.getAllByLocation(oldWarehouse.location);
-      var currentStockForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.stock).reduce(0, Integer::sum);
-      var currentCapacityForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.capacity).reduce(0, Integer::sum);
-      if (currentCapacityForOldLocation - oldWarehouse.capacity < currentStockForOldLocation) return Either.left(String.format("Cannot accommodate the current stock level %d because the new capacity for location %s is %d", currentStockForOldLocation, location.identification, currentCapacityForOldLocation - oldWarehouse.capacity));
-    } else {
-      var warehousesPerLocationForOldWarehouse = warehouseStore.getAllByLocation(oldWarehouse.location);
-      var currentStockForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.stock).reduce(0, Integer::sum);
-      var currentCapacityForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.capacity).reduce(0, Integer::sum) ;
-      if (currentCapacityForOldLocation + newWarehouse.capacity - oldWarehouse.capacity < currentStockForOldLocation) return Either.left(String.format("Cannot accommodate the current stock level %d because the new capacity for location %s is %d", currentStockForOldLocation, location.identification, currentCapacityForOldLocation + newWarehouse.capacity - oldWarehouse.capacity));
+        return Either.left(String.format("Location %s has reached max number of warehouses", location.identification));
     }
+    // extra check //TODO Capacity Accommodation Ask to Ikea maybe  I did NOT understand
+    var deltaCapacityForStock = isInTheSameLocation ? newWarehouse.capacity - oldWarehouse.capacity : - oldWarehouse.capacity;
+    var warehousesPerLocationForOldWarehouse = warehouseStore.getAllByLocation(oldWarehouse.location);
+    var currentStockForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.stock).reduce(0, Integer::sum);
+    var currentCapacityForOldLocation = warehousesPerLocationForOldWarehouse.stream().map(w -> w.capacity).reduce(0, Integer::sum);
+    if (currentCapacityForOldLocation + deltaCapacityForStock < currentStockForOldLocation) return Either.left(String.format("Cannot accommodate the current stock level %d because the new capacity for location %s is %d", currentStockForOldLocation, location.identification, currentCapacityForOldLocation + deltaCapacityForStock));
     oldWarehouse.archivedAt = LocalDateTime.now();
     warehouseStore.update(oldWarehouse);
     warehouseStore.create(newWarehouse);
