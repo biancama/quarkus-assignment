@@ -2,28 +2,39 @@ package com.fulfilment.application.monolith.warehouses.adapters.database;
 
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.mapper.WarehouseMapper;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
 
   @Override
   public List<Warehouse> getAll() {
-    return this.listAll().stream().map(DbWarehouse::toWarehouse).toList();
+    return this.list("archivedAt IS NULL").stream().map(DbWarehouse::toWarehouse).collect(Collectors.toUnmodifiableList());
   }
 
   @Override
-  public void create(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'create'");
+  public List<Warehouse> getAllByLocation(String location) {
+    return this.list("location = ?1 AND archivedAt IS NULL", location).stream().map(DbWarehouse::toWarehouse).collect(Collectors.toUnmodifiableList());
+  }
+
+  @Override
+  public Warehouse create(Warehouse warehouse) {
+    warehouse.createdAt = LocalDateTime.now();
+    warehouse.archivedAt = null;
+    persist(WarehouseMapper.INSTANCE.warehouseDtoToDbWarehouse(warehouse));
+    return warehouse;
   }
 
   @Override
   public void update(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'replace'");
+    warehouse.createdAt = null;
+    persist(WarehouseMapper.INSTANCE.warehouseDtoToDbWarehouse(warehouse));
   }
 
   @Override
@@ -34,7 +45,7 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
-    var warehouse = find("businessUnitCode", buCode).firstResult();
+    var warehouse = list("businessUnitCode = ?1 AND archivedAt IS NULL", buCode).stream().findFirst().orElse(null);
     if (warehouse == null) {
       return null;
     } else {
