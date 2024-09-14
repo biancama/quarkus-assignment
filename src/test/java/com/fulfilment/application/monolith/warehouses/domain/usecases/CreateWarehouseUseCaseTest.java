@@ -45,6 +45,24 @@ public class CreateWarehouseUseCaseTest {
         assertTrue(warehouseCreated.isRight(), "Validation exception");
         assertThat(warehouseCreated.get(), equalTo((warehouse)));
     }
+
+    @Test
+    public void givenWarehouse_whenAllValidationSucceedWithExactCapacity_thenReturnWarehouse() {
+        var warehouse = getWarehouse();
+
+        List<Warehouse> warehousesPerLocation = getWarehouses();
+
+        var location = new Location("AMS", 3, 400);
+
+        when(locationResolver.resolveByIdentifier(warehouse.location)).thenReturn(location);
+        when(warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode)).thenReturn(null);
+        when(warehouseStore.getAllByLocation(warehouse.location)).thenReturn(warehousesPerLocation);
+        when(warehouseStore.create(warehouse)).thenReturn(warehouse);
+
+        var warehouseCreated = createWarehouseUseCase.create(warehouse);
+        assertTrue(warehouseCreated.isRight(), "Validation exception");
+        assertThat(warehouseCreated.get(), equalTo((warehouse)));
+    }
     @Test
     public void givenWarehouse_whenBusinessUnitAlreadyExist_thenReturnAValidationError() {
         var warehouse = getWarehouse();
