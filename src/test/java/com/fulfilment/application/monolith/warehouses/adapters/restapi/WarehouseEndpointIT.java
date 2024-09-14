@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
+//@QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class WarehouseEndpointIT {
 
@@ -147,4 +148,42 @@ public class WarehouseEndpointIT {
   }
 
 
+  @Test
+  public void testSimpleReplaceWarehouse() {
+
+    final String path = "warehouse/MWH.023/replacement";
+
+    final var warehouse = new Warehouse();
+    warehouse.setBusinessUnitCode("MWH.023");
+    warehouse.setLocation("TILBURG-001");
+    warehouse.setStock(27);
+    warehouse.setCapacity(40);
+
+     given()
+            .body(warehouse)
+            .contentType(ContentType.JSON)
+            .when()
+            .post(path)
+            .then()
+            .statusCode(200);
+  }
+  @Test
+  @Order(2)
+  public void testOneValidationFailingWhenReplaceWarehouse() {
+    final String path = "warehouse/MWH.023/replacement";
+
+    final var warehouse = new Warehouse();
+    warehouse.setBusinessUnitCode("MWH.023");
+    warehouse.setLocation("TILBURG-001");
+    warehouse.setStock(28);
+    warehouse.setCapacity(40);
+
+    given()
+            .body(warehouse)
+            .contentType(ContentType.JSON)
+            .when()
+            .post(path)
+            .then()
+            .statusCode(400);
+  }
 }

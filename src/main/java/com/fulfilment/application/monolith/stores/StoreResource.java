@@ -92,7 +92,7 @@ public class StoreResource {
   @Path("{id}")
   @Transactional
   public Store patch(Long id, Store updatedStore) {
-    // Check with Ikea.... I think this is an error because PATCH can partially change an object
+    //TODO Check with Ikea.... I think this is an error because PATCH can partially change an object
 //    if (updatedStore.name == null) {
 //      throw new WebApplicationException("Store Name was not set on request.", 422);
 //    }

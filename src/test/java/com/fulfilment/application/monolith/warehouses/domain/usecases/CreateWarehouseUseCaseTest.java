@@ -32,7 +32,7 @@ public class CreateWarehouseUseCaseTest {
     public void givenWarehouse_whenAllValidationSucceed_thenReturnWarehouse() {
         var warehouse = getWarehouse();
 
-        List<Warehouse> warehousesPerLocation = getWarehouses();
+        List<Warehouse> warehousesPerLocation = getWarehousesAlreadyPresent();
 
         var location = new Location("AMS", 3, 1000);
 
@@ -50,7 +50,7 @@ public class CreateWarehouseUseCaseTest {
     public void givenWarehouse_whenAllValidationSucceedWithExactCapacity_thenReturnWarehouse() {
         var warehouse = getWarehouse();
 
-        List<Warehouse> warehousesPerLocation = getWarehouses();
+        List<Warehouse> warehousesPerLocation = getWarehousesAlreadyPresent();
 
         var location = new Location("AMS", 3, 400);
 
@@ -80,7 +80,7 @@ public class CreateWarehouseUseCaseTest {
     public void givenWarehouse_whenMaxNumberOfWarehousesPerLocationIsAlreadyReached_thenReturnAValidationError() {
         var warehouse = getWarehouse();
 
-        List<Warehouse> warehousesPerLocation = getWarehouses();
+        List<Warehouse> warehousesPerLocation = getWarehousesAlreadyPresent();
 
         var location = new Location("AMS", 2, 400);
 
@@ -98,7 +98,7 @@ public class CreateWarehouseUseCaseTest {
         var warehouse = getWarehouse();
         warehouse.capacity = 0;
         warehouse.stock = 0;
-        List<Warehouse> warehousesPerLocation = getWarehouses();
+        List<Warehouse> warehousesPerLocation = getWarehousesAlreadyPresent();
 
         var location = new Location("AMS", 3, 200);
 
@@ -115,7 +115,7 @@ public class CreateWarehouseUseCaseTest {
     public void givenWarehouse_whenMaxCapacityOfWarehousesPerLocationIsNotReachedButItWillBeReachedWithTheNewWarehosue_thenReturnAValidationError() {
         var warehouse = getWarehouse();
 
-        List<Warehouse> warehousesPerLocation = getWarehouses();
+        List<Warehouse> warehousesPerLocation = getWarehousesAlreadyPresent();
 
         var location = new Location("AMS", 3, 350);
 
@@ -138,7 +138,7 @@ public class CreateWarehouseUseCaseTest {
         assertThat(warehouseCreated.getLeft(), equalTo(("Cannot create a warehouse with stock greater than capacity")));
     }
 
-    private static List<Warehouse> getWarehouses() {
+    private static List<Warehouse> getWarehousesAlreadyPresent() {
         var warehouse01 = new Warehouse();
         warehouse01.capacity = 100;
         var warehouse02 = new Warehouse();

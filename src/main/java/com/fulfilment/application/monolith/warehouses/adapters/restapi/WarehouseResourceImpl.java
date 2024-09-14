@@ -3,6 +3,7 @@ package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.ArchiveWarehouseUseCase;
+import com.fulfilment.application.monolith.warehouses.domain.usecases.ReplaceWarehouseUseCase;
 import com.fulfilment.application.monolith.warehouses.mapper.WarehouseMapper;
 import com.warehouse.api.WarehouseResource;
 import com.warehouse.api.beans.Warehouse;
@@ -23,6 +24,8 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Inject private WarehouseRepository warehouseRepository;
   @Inject private CreateWarehouseOperation createWarehouseOperation;
   @Inject private ArchiveWarehouseUseCase archiveWarehouseUseCase;
+  @Inject private ReplaceWarehouseUseCase replaceWarehouseUseCase;
+
   @Context
   private UriInfo uriInfo;
 
@@ -60,9 +63,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Override
   public Warehouse replaceTheCurrentActiveWarehouse(
           String businessUnitCode, @NotNull Warehouse data) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException(
-            "Unimplemented method 'replaceTheCurrentActiveWarehouse'");
+    data.setBusinessUnitCode(businessUnitCode);
+    var newWarehouse = replaceWarehouseUseCase.replace(WarehouseMapper.INSTANCE.pojoWarehouseToWarehouse(data));
+    if (newWarehouse.isRight()) {
+      return WarehouseMapper.INSTANCE.warehouseToPojoWarehouse(newWarehouse.get());
+    } else {
+      throw new WebApplicationException(newWarehouse.getLeft(), 400);
+    }
   }
 
   private Warehouse toWarehouseResponse(
